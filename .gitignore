@@ -1,0 +1,5 @@
+.env
+processed_ids.json
+main
+*.exe
+vendor/
