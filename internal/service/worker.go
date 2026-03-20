@@ -11,10 +11,10 @@ import (
 
 type Worker struct {
 	cfg   *config.Config
-	store *store.JSONStore
+	store *store.SQLiteStore
 }
 
-func NewWorker(cfg *config.Config, s *store.JSONStore) *Worker {
+func NewWorker(cfg *config.Config, s *store.SQLiteStore) *Worker {
 	return &Worker{cfg: cfg, store: s}
 }
 
@@ -60,7 +60,7 @@ func (w *Worker) process() {
 		msgID := msg.Envelope.MessageId
 		from := msg.Envelope.From[0].Address()
 
-		if w.store.Exists(msgID) {
+		if w.store.IsProcessed(msgID) {
 			continue
 		}
 
@@ -69,7 +69,7 @@ func (w *Worker) process() {
 			w.cfg.SMTPHost, w.cfg.SMTPPort, w.cfg.EmailUser, w.cfg.EmailPass)
 
 		if err == nil {
-			w.store.Save(msgID)
+			w.store.MarkAsProcessed(msgID)
 			log.Printf("✅ Success: Reply sent to %s", from)
 		} else {
 			log.Printf("❌ Error sending reply: %v", err)

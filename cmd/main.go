@@ -13,8 +13,11 @@ func main() {
 		log.Fatal("❌ Missing EMAIL_USER or EMAIL_PASS in environment variables")
 	}
 
-	s := store.NewJSONStore(cfg.StorePath)
-	worker := service.NewWorker(cfg, s)
+	s, err := store.NewSQLiteStore(cfg.DBPath)
+	if err != nil {
+		log.Fatalf("❌ Failed to init store: %v", err)
+	}
 
+	worker := service.NewWorker(cfg, s)
 	worker.Start()
 }

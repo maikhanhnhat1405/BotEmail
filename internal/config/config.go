@@ -14,7 +14,7 @@ type Config struct {
 	EmailPass    string
 	ReplySubject string
 	ReplyBody    string
-	StorePath    string
+	DBPath       string
 }
 
 func LoadConfig() *Config {
@@ -28,7 +28,7 @@ func LoadConfig() *Config {
 		EmailPass:    os.Getenv("EMAIL_PASS"),
 		ReplySubject: getEnv("REPLY_SUBJECT", "Auto-Reply: Acknowledgement"),
 		ReplyBody:    getEnv("REPLY_BODY", "Hello World"),
-		StorePath:    getEnv("STORE_PATH", "processed_ids.json"),
+		DBPath:       getEnv("DB_PATH", "data/emails.db"),
 	}
 }
 
