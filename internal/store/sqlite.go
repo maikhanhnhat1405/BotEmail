@@ -25,7 +25,6 @@ func NewSQLiteStore(dbPath string) (*SQLiteStore, error) {
 	return &SQLiteStore{db: db}, nil
 }
 
-// Kiểm tra email đã xử lý chưa
 func (s *SQLiteStore) IsProcessed(id string) bool {
 	var exists bool
 	err := s.db.QueryRow("SELECT EXISTS(SELECT 1 FROM processed_emails WHERE id=?)", id).Scan(&exists)
