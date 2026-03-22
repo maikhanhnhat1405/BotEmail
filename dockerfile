@@ -8,9 +8,7 @@ RUN go build -o main cmd/main.go
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 WORKDIR /root/
-# Tạo thư mục data để lưu file database
 RUN mkdir data
 COPY --from=builder /app/main .
 COPY .env .
-# Chạy chương trình
 CMD ["./main"]

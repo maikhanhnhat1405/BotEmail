@@ -1,14 +1,15 @@
 # BotEmail - Auto Reply Service
 
-Service tự động reply email cho Gmail.
+Service tự động reply email cho nhiều tài khoản.
 
 ## Tính năng
 
-- Kết nối mailbox qua IMAP
+- Hỗ trợ nhiều tài khoản email
+- Mỗi email có cấu hình riêng (IMAP, SMTP, nội dung reply)
 - Phát hiện email chưa đọc
 - Gửi reply tự động
-- Tránh duplicate reply (dùng SQLite)
-- Log kết quả xử lý
+- Tránh duplicate reply (dùng PostgreSQL)
+- Bật/tắt account dễ dàng
 
 ## Cấu trúc project
 
@@ -23,36 +24,47 @@ BotEmail/
 │   ├── service/
 │   │   └── worker.go     # Logic xử lý chính
 │   └── store/
-│       └── sqlite.go     # Lưu email đã xử lý
-├── data/                 # Folder chứa database
-├── .env                  # Config (email, password)
+│       └── postgres.go    # Lưu accounts & email đã xử lý
+├── .env
 └── Dockerfile
 ```
 
+## Database Schema
+
+### Bảng accounts
+Lưu thông tin các tài khoản email:
+
+| Column | Mô tả |
+|--------|--------|
+| id | ID tự động |
+| email | Địa chỉ email |
+| password | App Password |
+| imap_host | Server IMAP |
+| imap_port | Port IMAP |
+| smtp_host | Server SMTP |
+| smtp_port | Port SMTP |
+| reply_subject | Tiêu đề reply |
+| reply_body | Nội dung reply |
+| active | Bật/tắt (true/false) |
+
+### Bảng processed_emails
+Lưu ID email đã reply để tránh duplicate.
+
 ## Cách chạy
 
-### 1. Cài đặt
+### 1. Cài đặt Database
 
 ```bash
-# Tạo thư mục data
-mkdir -p data
-
-# Tạo file .env
-touch .env
+# Tạo database PostgreSQL
+createdb botemail -U nhat
 ```
 
 ### 2. Cấu hình
 
-Sửa file `.env`:
-
+Tạo file `.env`:
 ```env
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
+DB_URL=postgresql://nhat:123456@localhost:5432/botemail?sslmode=disable
 ```
-
-**Lấy App Password:**
-1. Bật 2-Step Verification: https://myaccount.google.com/security
-2. Tạo App Password: https://myaccount.google.com/apppasswords
 
 ### 3. Chạy
 
@@ -60,11 +72,33 @@ EMAIL_PASS=your_app_password
 go run ./cmd/main.go
 ```
 
-### 4. Tùy chỉnh reply
+Lần đầu chạy sẽ tự động tạo account mặc định.
 
-```env
-REPLY_SUBJECT=Auto-Reply
-REPLY_BODY=Hello World
+## Quản lý Accounts
+
+### Thêm account qua SQL:
+
+```sql
+-- Thêm account mới
+INSERT INTO accounts (email, password, imap_host, imap_port, smtp_host, smtp_port, reply_subject, reply_body)
+VALUES ('email2@gmail.com', 'app_password', 'imap.gmail.com', '993', 'smtp.gmail.com', '587', 'Auto-Reply', 'Chào bạn!');
+
+-- Xem danh sách accounts
+SELECT * FROM accounts;
+
+-- Tắt account
+UPDATE accounts SET active = false WHERE id = 1;
+
+-- Bật account
+UPDATE accounts SET active = true WHERE id = 1;
+
+-- Xóa account
+DELETE FROM accounts WHERE id = 1;
+```
+
+### Kiểm tra emails đã xử lý:
+```sql
+SELECT * FROM processed_emails;
 ```
 
 ## Docker
@@ -74,22 +108,18 @@ REPLY_BODY=Hello World
 docker build -t botemail .
 
 # Run
-docker run -e EMAIL_USER=xxx -e EMAIL_PASS=xxx botemail
-```
-
-## Database
-
-File `data/emails.db` lưu ID các email đã reply để tránh duplicate.
-
-Kiểm tra dữ liệu:
-```bash
-sqlite3 data/emails.db "SELECT * FROM processed_emails;"
+docker run -e DB_URL=postgresql://nhat:123456@host:5432/botemail botemail
 ```
 
 ## Log output
 
 ```
 🚀 Service started. Monitoring mailbox...
-📩 Sending auto-reply to: sender@gmail.com
-✅ Success: Reply sent to sender@gmail.com
+📋 Processing 2 account(s)...
+🔄 Checking inbox: email1@gmail.com
+📬 Found 3 unread email(s) for: email1@gmail.com
+📩 Sending auto-reply to: sender@example.com
+✅ Success: Reply sent to sender@example.com
+🔄 Checking inbox: email2@gmail.com
+📭 No unread emails for: email2@gmail.com
 ```

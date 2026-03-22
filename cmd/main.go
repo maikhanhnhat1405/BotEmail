@@ -9,13 +9,33 @@ import (
 
 func main() {
 	cfg := config.LoadConfig()
-	if cfg.EmailUser == "" || cfg.EmailPass == "" {
-		log.Fatal("❌ Missing EMAIL_USER or EMAIL_PASS in environment variables")
+	if cfg.DBURL == "" {
+		log.Fatal("❌ Missing DB_URL")
 	}
 
-	s, err := store.NewSQLiteStore(cfg.DBPath)
+	s, err := store.NewPostgresStore(cfg.DBURL)
 	if err != nil {
 		log.Fatalf("❌ Failed to init store: %v", err)
+	}
+
+	// Thêm account mặc định nếu chưa có
+	accounts, _ := s.GetActiveAccounts()
+	if len(accounts) == 0 {
+		log.Println("📝 No accounts found. Adding default account...")
+		err := s.AddAccount(
+			"quaniudau812006@gmail.com",
+			"hhzpnjkljchiixnr",
+			"imap.gmail.com",
+			"993",
+			"smtp.gmail.com",
+			"587",
+			"Auto-Reply",
+			"Hello World",
+		)
+		if err != nil {
+			log.Fatalf("❌ Failed to add default account: %v", err)
+		}
+		log.Println("✅ Default account added!")
 	}
 
 	worker := service.NewWorker(cfg, s)
