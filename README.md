@@ -56,49 +56,65 @@ Lưu ID email đã reply để tránh duplicate.
 
 ```bash
 # Tạo database PostgreSQL
-createdb botemail -U nhat
+createdb botemail
 ```
 
 ### 2. Cấu hình
 
-Tạo file `.env`:
-```env
-DB_URL=postgresql://nhat:123456@localhost:5432/botemail?sslmode=disable
+```bash
+cp .env.example .env
+# Sửa .env với DB_URL của bạn
 ```
 
-### 3. Chạy
+### 3. Thêm email account
+
+```bash
+# Sửa .env với DB_URL, ví dụ:
+# DB_URL=postgresql://user:password@localhost:5432/botemail
+
+# Chạy lệnh thêm account:
+go run ./cmd/main.go add \
+  --email="your-email@gmail.com" \
+  --password="your-app-password" \
+  --reply-subject="Auto-Reply" \
+  --reply-body="Chào bạn, chúng tôi đã nhận được email."
+```
+
+### 4. Chạy service
 
 ```bash
 go run ./cmd/main.go
 ```
 
-Lần đầu chạy sẽ tự động tạo account mặc định.
-
 ## Quản lý Accounts
 
-### Thêm account qua SQL:
+### Thêm account mới:
+```bash
+go run ./cmd/main.go add --email="email2@gmail.com" --password="app-pass"
+```
 
-```sql
--- Thêm account mới
-INSERT INTO accounts (email, password, imap_host, imap_port, smtp_host, smtp_port, reply_subject, reply_body)
-VALUES ('email2@gmail.com', 'app_password', 'imap.gmail.com', '993', 'smtp.gmail.com', '587', 'Auto-Reply', 'Chào bạn!');
+### Xem danh sách accounts:
+```bash
+psql $DB_URL -c "SELECT id, email, reply_subject, active FROM accounts;"
+```
 
--- Xem danh sách accounts
-SELECT * FROM accounts;
+### Tắt/Bật account:
+```bash
+# Tắt
+psql $DB_URL -c "UPDATE accounts SET active = false WHERE id = 1;"
 
--- Tắt account
-UPDATE accounts SET active = false WHERE id = 1;
+# Bật
+psql $DB_URL -c "UPDATE accounts SET active = true WHERE id = 1;"
+```
 
--- Bật account
-UPDATE accounts SET active = true WHERE id = 1;
-
--- Xóa account
-DELETE FROM accounts WHERE id = 1;
+### Xóa account:
+```bash
+psql $DB_URL -c "DELETE FROM accounts WHERE id = 1;"
 ```
 
 ### Kiểm tra emails đã xử lý:
-```sql
-SELECT * FROM processed_emails;
+```bash
+psql $DB_URL -c "SELECT * FROM processed_emails;"
 ```
 
 ## Docker
@@ -108,7 +124,7 @@ SELECT * FROM processed_emails;
 docker build -t botemail .
 
 # Run
-docker run -e DB_URL=postgresql://nhat:123456@host:5432/botemail botemail
+docker run -e DB_URL="postgresql://user:pass@host:5432/botemail" botemail
 ```
 
 ## Log output
