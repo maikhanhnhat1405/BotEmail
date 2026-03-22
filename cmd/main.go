@@ -18,24 +18,15 @@ func main() {
 		log.Fatalf("❌ Failed to init store: %v", err)
 	}
 
-	// Thêm account mặc định nếu chưa có
-	accounts, _ := s.GetActiveAccounts()
+	// Kiểm tra có account nào chưa
+	accounts, err := s.GetActiveAccounts()
+	if err != nil {
+		log.Fatalf("❌ Failed to get accounts: %v", err)
+	}
 	if len(accounts) == 0 {
-		log.Println("📝 No accounts found. Adding default account...")
-		err := s.AddAccount(
-			"quaniudau812006@gmail.com",
-			"hhzpnjkljchiixnr",
-			"imap.gmail.com",
-			"993",
-			"smtp.gmail.com",
-			"587",
-			"Auto-Reply",
-			"Hello World",
-		)
-		if err != nil {
-			log.Fatalf("❌ Failed to add default account: %v", err)
-		}
-		log.Println("✅ Default account added!")
+		log.Fatal("❌ No accounts found. Please add account via SQL:")
+		log.Fatal(`   INSERT INTO accounts (email, password, imap_host, imap_port, smtp_host, smtp_port, reply_subject, reply_body)
+   VALUES ('your_email@gmail.com', 'app_password', 'imap.gmail.com', '993', 'smtp.gmail.com', '587', 'Auto-Reply', 'Hello World');`)
 	}
 
 	worker := service.NewWorker(cfg, s)
